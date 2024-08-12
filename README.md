@@ -28,4 +28,4 @@ To set up the virtual environment and install all necessary dependencies, run th
 ./setup.sh
 ```
 
-
+After running the setup.sh script, the virtual environment will be added as a kernel in Jupyter Notebook.
