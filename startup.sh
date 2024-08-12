@@ -51,3 +51,9 @@ else
     echo "There was an error installing the dependencies."
     exit 1
 fi
+
+# Install the virtual environment as a Jupyter kernel
+$PYTHON -m ipykernel install --user --name=venv --display-name "Python (venv)"
+echo "Jupyter kernel 'Python (venv)' has been installed."
+
+echo "Setup is complete. To use the 'Python (venv)' kernel in Jupyter Notebook, start Jupyter and select the kernel from the 'Kernel > Change Kernel' menu."
