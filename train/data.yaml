@@ -1,0 +1,8 @@
+path: /Users/francouys/Documents/hackathon_STD/train/data
+train: images/train
+val: images/val
+
+names:
+  0: pothole
+  1: l1_stick
+  2: l2_stick
