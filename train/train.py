@@ -93,22 +93,7 @@ class PotholeYOLO:
 
 
 if __name__ == "__main__":
-    # Update the paths based on the new directory structure
-    base_dir = os.path.dirname(os.path.abspath(__file__))  # Get the current directory
-    data_yaml_path = os.path.join(
-        base_dir, "split_dataset", "data.yaml"
-    )  # Absolute path to your data.yaml
-    yolo_model_path = "yolov8n.pt"  # Path to your YOLOv8 model
+    model = YOLO("yolov8n.pt")  # load a pretrained model (recommended for training)
 
-    # Load YOLOv8 model and fine-tune
-    yolo = PotholeYOLO(yolo_model_path=yolo_model_path)
-    yolo.fine_tune(
-        data_yaml_path=data_yaml_path, epochs=1, project_path=base_dir
-    )  # Use current directory as project path
-
-    yolo.validate()
-
-    test_image_path = os.path.join(
-        base_dir, "..", "data/test_images/p104.jpg"
-    )  # Path to your test image
-    yolo.predict_and_show(test_image_path)
+    model.train(data="data.yaml", epochs=1)  # train the model
+    metrics = model.val()  # evaluate model performance on the validation set

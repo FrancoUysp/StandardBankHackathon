@@ -1,25 +1,23 @@
 import os
-import sys
 import shutil
 import random
 import pandas as pd
 import yaml
 
 
-def setup_directories(base_dir, directories):
-    """Create directories if they don't exist, or clear them if they do."""
-    for directory in directories:
-        dir_path = os.path.join(directory)
+def setup_directories(base_dir):
+    """Create base directories for images and labels, and subdirectories for train and val."""
+    dirs = ["images/train", "images/val", "labels/train", "labels/val"]
+    for directory in dirs:
+        dir_path = os.path.join(base_dir, directory)
         if os.path.exists(dir_path):
             shutil.rmtree(dir_path)
-        os.makedirs(dir_path)
-
-        # Create the images and labels subdirectories
-        os.makedirs(os.path.join(dir_path, "images"), exist_ok=True)
-        os.makedirs(os.path.join(dir_path, "labels"), exist_ok=True)
+        os.makedirs(dir_path, exist_ok=True)
 
 
-def save_annotations_and_images(data_dir, pothole_ids, split_dir):
+def save_annotations_and_images(
+    data_dir, pothole_ids, split_dir_images, split_dir_labels
+):
     """Copy images and annotation files to the appropriate directories."""
     images_dir = os.path.join(data_dir, "train_images")
     annotations_dir = os.path.join(data_dir, "train_annotations")
@@ -31,13 +29,13 @@ def save_annotations_and_images(data_dir, pothole_ids, split_dir):
         # Copy image
         shutil.copy(
             os.path.join(images_dir, image_name),
-            os.path.join(split_dir, "images", image_name),
+            os.path.join(split_dir_images, image_name),
         )
 
         # Copy annotation
         shutil.copy(
             os.path.join(annotations_dir, annotation_name),
-            os.path.join(split_dir, "labels", annotation_name),
+            os.path.join(split_dir_labels, annotation_name),
         )
 
 
@@ -65,26 +63,6 @@ def split_data(data_dir, train_ratio=0.85, val_ratio=0.15):
     return train_files, val_files
 
 
-def create_yaml_file(
-    yaml_path,
-    base_output_dir,
-    train_dir,
-    val_dir,
-    nc=3,
-    names=["pothole", "l1_stick", "l2_stick"],
-):
-    """Create a YAML configuration file for YOLO."""
-    data = {
-        "path": base_output_dir,
-        "train": os.path.join("train", "images"),
-        "val": os.path.join("val", "images"),
-        "nc": nc,
-        "names": names,
-    }
-    with open(yaml_path, "w") as file:
-        yaml.dump(data, file, default_flow_style=False)
-
-
 def prepare_dataset(
     data_dir,
     base_output_dir,
@@ -92,26 +70,47 @@ def prepare_dataset(
     val_ratio=0.15,
 ):
     """Main function to prepare dataset, split data, and create directories."""
-    train_dir = os.path.join(base_output_dir, "train")
-    val_dir = os.path.join(base_output_dir, "val")
-    dirs = [train_dir, val_dir]
-
     # Setup directories
-    setup_directories(base_output_dir, dirs)
+    setup_directories(base_output_dir)
 
     # Split data into train and validation sets
     train_files, val_files = split_data(data_dir, train_ratio, val_ratio)
 
     # Save annotations and images
-    save_annotations_and_images(data_dir, train_files, train_dir)
-    save_annotations_and_images(data_dir, val_files, val_dir)
+    save_annotations_and_images(
+        data_dir,
+        train_files,
+        os.path.join(base_output_dir, "images/train"),
+        os.path.join(base_output_dir, "labels/train"),
+    )
+    save_annotations_and_images(
+        data_dir,
+        val_files,
+        os.path.join(base_output_dir, "images/val"),
+        os.path.join(base_output_dir, "labels/val"),
+    )
 
     # Create YAML file for YOLO
     yaml_path = os.path.join(base_output_dir, "data.yaml")
-    create_yaml_file(yaml_path, base_output_dir, train_dir, val_dir)
+    create_yaml_file(yaml_path, base_output_dir)
 
     print(f"Data preparation complete. YAML file created at {yaml_path}")
     return yaml_path
+
+
+def create_yaml_file(
+    yaml_path, base_output_dir, nc=3, names=["pothole", "l1_stick", "l2_stick"]
+):
+    """Create a YAML configuration file for YOLO."""
+    data = {
+        "path": base_output_dir,
+        "train": os.path.join(base_output_dir, "images/train"),
+        "val": os.path.join(base_output_dir, "images/val"),
+        "nc": nc,
+        "names": names,
+    }
+    with open(yaml_path, "w") as file:
+        yaml.dump(data, file, default_flow_style=False)
 
 
 def check_pothole_completeness(data_dir, csv_file):
@@ -161,7 +160,7 @@ def check_pothole_completeness(data_dir, csv_file):
 if __name__ == "__main__":
     data_dir = "../data"
     csv_file = "train_labels.csv"
-    base_output_dir = "split_dataset"  # Updated to avoid double nesting
+    base_output_dir = "data"  # Updated to avoid double nesting
     check_pothole_completeness(data_dir, csv_file)
 
     # Prepare dataset for YOLO fine-tuning
