@@ -94,7 +94,7 @@ class PotholeYOLO:
 
 if __name__ == "__main__":
     model = YOLO(
-        "yolov8m-oiv7.pt"
+        "yolov8m.pt"
     )  # load a pretrained model (recommended for training)
 
     model.train(
