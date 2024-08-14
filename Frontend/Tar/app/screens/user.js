@@ -12,7 +12,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { db, storage } from "../../FirebaseConfig";
 import { addDoc, collection } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes} from "firebase/storage";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 export default function App() {
   const [cameraPermission, setCameraPermission] = useState(null);
@@ -22,6 +22,7 @@ export default function App() {
   const [image, setImage] = useState(null);
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
 
   const requestPermissions = async () => {
     const cameraStatus = await Camera.requestPermissionsAsync();
@@ -65,45 +66,57 @@ export default function App() {
     const storageRef = ref(storage, `potholes/${Date.now()}`);
     await uploadBytes(storageRef, blob);
     return getDownloadURL(storageRef);
-  }
+  };
 
   const submitReport = async () => {
     const imageUrl = await uploadImage();
-    const potholeCollection = collection(db, 'potholes');
+    const potholeCollection = collection(db, "potholes");
     await addDoc(potholeCollection, {
       image: imageUrl,
       description: description,
-      location: "17 SOmehwere street, SOmehwere, 7800", // REplace this when location works
+      location: "Dagbreek Manskoshuis, Stellenbosch, 7600", // Replace this when location works
       reported_date: new Date(),
       status: "Reported",
     });
 
-  }
+    // After submission, show the thank-you message and clear the screen
+    setSubmitted(true);
+    setImage(null);
+    setDescription("");
+
+    // Reset the form after a short delay (e.g., 3 seconds)
+    setTimeout(() => {
+      setSubmitted(false);
+    }, 3000);
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Report a Pothole</Text>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={takePhoto}>
-          <Text style={styles.buttonText}>Take a Photo</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={pickImage}>
-          <Text style={styles.buttonText}>Upload from Gallery</Text>
-        </TouchableOpacity>
-      </View>
-      {image && <Image source={{ uri: image }} style={styles.image} />}
-      <TextInput
-        style={styles.input}
-        placeholder="Enter a description"
-        onChangeText={setDescription}
-        value={description}
-      />
-      <TouchableOpacity
-        style={styles.submitButton}
-        onPress={() => submitReport()}
-      >
-        <Text style={styles.submitButtonText}>Submit</Text>
-      </TouchableOpacity>
+      {submitted ? (
+        <Text style={styles.thankYouText}>Thank you for submitting!</Text>
+      ) : (
+        <>
+          <Text style={styles.title}>Report a Pothole</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={takePhoto}>
+              <Text style={styles.buttonText}>Take a Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={pickImage}>
+              <Text style={styles.buttonText}>Upload from Gallery</Text>
+            </TouchableOpacity>
+          </View>
+          {image && <Image source={{ uri: image }} style={styles.image} />}
+          <TextInput
+            style={styles.input}
+            placeholder="Enter a description"
+            onChangeText={setDescription}
+            value={description}
+          />
+          <TouchableOpacity style={styles.submitButton} onPress={submitReport}>
+            <Text style={styles.submitButtonText}>Submit</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
@@ -159,5 +172,10 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: "#fff",
     fontSize: 18,
+  },
+  thankYouText: {
+    fontSize: 24,
+    color: "#28a745",
+    fontWeight: "bold",
   },
 });
