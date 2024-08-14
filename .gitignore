@@ -324,4 +324,7 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+#MiDaS
+MiDaS/
+
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,linux,windows,git,venv,jupyternotebooks,vim,visualstudiocode
