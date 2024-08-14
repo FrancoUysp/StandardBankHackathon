@@ -16,9 +16,14 @@ def setup_directories(base_dir):
 
 
 def save_annotations_and_images(
-    data_dir, pothole_ids, split_dir_images, split_dir_labels, class_to_remove=2
+    data_dir,
+    pothole_ids,
+    split_dir_images,
+    split_dir_labels,
+    class_to_modify=2,
+    target_class=1,
 ):
-    """Copy images and annotation files to the appropriate directories, removing class type 2."""
+    """Copy images and annotation files to the appropriate directories, modifying class type 2 to class type 1."""
     images_dir = os.path.join(data_dir, "train_images")
     annotations_dir = os.path.join(data_dir, "train_annotations")
 
@@ -32,18 +37,21 @@ def save_annotations_and_images(
             os.path.join(split_dir_images, image_name),
         )
 
-        # Read annotation, filter out class 2, and save
+        # Read annotation, modify class 2 to class 1, and save
         with open(os.path.join(annotations_dir, annotation_name), "r") as infile:
             lines = infile.readlines()
 
-        # Filter out lines corresponding to class_to_remove
-        filtered_lines = [
-            line for line in lines if not line.startswith(f"{class_to_remove} ")
+        # Modify lines corresponding to class_to_modify
+        modified_lines = [
+            line
+            if not line.startswith(f"{class_to_modify} ")
+            else line.replace(f"{class_to_modify} ", f"{target_class} ")
+            for line in lines
         ]
 
-        # Save the filtered annotations to the destination
+        # Save the modified annotations to the destination
         with open(os.path.join(split_dir_labels, annotation_name), "w") as outfile:
-            outfile.writelines(filtered_lines)
+            outfile.writelines(modified_lines)
 
 
 def split_data(data_dir, train_ratio=0.85, val_ratio=0.15):
