@@ -93,7 +93,20 @@ class PotholeYOLO:
 
 
 if __name__ == "__main__":
-    model = YOLO("yolov8n.pt")  # load a pretrained model (recommended for training)
+    model = YOLO(
+        "yolov8m-oiv7.pt"
+    )  # load a pretrained model (recommended for training)
 
-    model.train(data="data.yaml", epochs=1)  # train the model
+    model.train(
+        data="data.yaml",
+        epochs=1000,
+        patience=10,
+        imgsz=256,
+        save_period=100,
+        close_mosaic=50,
+        freeze=10,
+        degrees=10,
+        shear=10,
+        perspective=0.0001,
+    )  # train the model
     metrics = model.val()  # evaluate model performance on the validation set
