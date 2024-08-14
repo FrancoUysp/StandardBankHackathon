@@ -1,4 +1,4 @@
-path: C:\Users\singh\StandardBankHackathon/train/data
+path: /home/ec2-user/StandardBankHackathon/train/data
 train: images/train
 val: images/val
 
