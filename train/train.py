@@ -93,7 +93,21 @@ class PotholeYOLO:
 
 
 if __name__ == "__main__":
+    # Get the directory of the current script
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Construct the full path to data.yaml
+    data_yaml_path = os.path.join(current_dir, "data.yaml")
+    
+    # Print the path to verify
+    print(f"Looking for data.yaml at: {data_yaml_path}")
+    
+    # Check if the file exists
+    if not os.path.exists(data_yaml_path):
+        print(f"Error: data.yaml not found at {data_yaml_path}")
+        exit(1)
+    
     model = YOLO("yolov8n.pt")  # load a pretrained model (recommended for training)
-
-    model.train(data="data.yaml", epochs=1)  # train the model
+    
+    model.train(data=data_yaml_path, epochs=1)  # train the model
     metrics = model.val()  # evaluate model performance on the validation set
