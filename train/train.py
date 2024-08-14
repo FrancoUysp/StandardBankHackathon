@@ -316,7 +316,7 @@ class PotholeFeatureExtractor:
 if __name__ == "__main__":
     model = YOLO("yolov8m.pt")  # load a pretrained model (recommended for training)
 
-    model.train(data="data.yaml", epochs=1000, patience=50, imgsz=256, freeze=2)
+    model.train(data="data.yaml", epochs=1000, patience=50, imgsz=256, freeze=30)
     model.val()
     #
     # # Get the directory of the current script
