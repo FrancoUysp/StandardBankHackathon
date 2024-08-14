@@ -3,7 +3,7 @@ import sys
 
 # Add the parent directory of MiDaS to the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
-midas_dir = os.path.join(current_dir, 'MiDaS')
+midas_dir = os.path.join(current_dir, "MiDaS")
 sys.path.append(midas_dir)
 
 import cv2
@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 # Commenting out MiDaS imports
 # from MiDaS.midas.model_loader import load_model
 # from MiDaS.midas.transforms import Resize, NormalizeImage, PrepareForNet
+
 
 class PotholeYOLO:
     def __init__(self, yolo_model_path=None):
@@ -104,20 +105,21 @@ class PotholeYOLO:
         plt.axis("off")
         plt.show()
 
+
 class PotholeFeatureExtractor:
     def __init__(self, yolo_model, midas_model_type="DPT_Large"):
         self.yolo_model = yolo_model
-        
+
         # Commenting out MiDaS initialization
         # # Initialize MiDaS model
         # self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # midas_model_path = self.download_midas_model(midas_model_type)
-        
+
         # # Load the MiDaS model
         # self.midas_model = load_model(midas_model_path)
         # self.midas_model.to(self.device)
         # self.midas_model.eval()
-        
+
         # # MiDaS transform
         # self.midas_transform = Compose(
         #     [
@@ -142,7 +144,7 @@ class PotholeFeatureExtractor:
     #         "DPT_Hybrid": "https://github.com/intel-isl/DPT/releases/download/1_0/dpt_hybrid-midas-501f0c75.pt",
     #         "MiDaS_small": "https://github.com/AlexeyAB/MiDaS/releases/download/midas_dpt/midas_v21_small-70d6b9c8.pt"
     #     }
-        
+
     #     if model_type not in model_url:
     #         raise ValueError(f"Invalid model type. Choose from {list(model_url.keys())}")
 
@@ -157,7 +159,7 @@ class PotholeFeatureExtractor:
     #     return model_path
 
     def read_yolo_annotation(self, file_path):
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             lines = file.readlines()
         annotations = []
         for line in lines:
@@ -169,19 +171,19 @@ class PotholeFeatureExtractor:
 
     def pixel_to_mm_conversion(self, annotations, image_width, image_height):
         l1_annotation = next((ann for ann in annotations if ann[0] == 1), None)
-        
+
         if l1_annotation:
             _, _, _, width, height = l1_annotation
             pixel_width = width * image_width
             pixel_height = height * image_height
-            
+
             # L1 true length is 500mm
             mm_per_pixel_width = 500 / pixel_width
             mm_per_pixel_height = 500 / pixel_height
-            
+
             # Use the average of width and height conversion factors
             mm_per_pixel = (mm_per_pixel_width + mm_per_pixel_height) / 2
-            
+
             return mm_per_pixel
         else:
             return None
@@ -238,15 +240,17 @@ class PotholeFeatureExtractor:
         if image is None:
             print(f"Error: Unable to read image at {image_path}")
             return []
-        
+
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image_height, image_width, _ = image.shape
-        
+
         print(f"Image shape: {image.shape}")
 
         # Use YOLO model to detect potholes with a lower confidence threshold
-        results = self.yolo_model.predict(image_path, conf=0.25)  # Lower confidence threshold
-        
+        results = self.yolo_model.predict(
+            image_path, conf=0.25
+        )  # Lower confidence threshold
+
         print(f"Number of detections: {len(results[0].boxes)}")
 
         features_list = []
@@ -259,19 +263,27 @@ class PotholeFeatureExtractor:
                 height = y2 - y1
                 confidence = box.conf.item()
 
-                print(f"Detection: x1={x1}, y1={y1}, x2={x2}, y2={y2}, confidence={confidence:.2f}")
+                print(
+                    f"Detection: x1={x1}, y1={y1}, x2={x2}, y2={y2}, confidence={confidence:.2f}"
+                )
 
-                features['pothole_width_pixels'] = width
-                features['pothole_height_pixels'] = height
-                features['pothole_area_pixels'] = width * height
-                features['aspect_ratio'] = width / height
-                features['relative_size'] = (width * height) / (image_width * image_height)
-                features['confidence'] = confidence
+                features["pothole_width_pixels"] = width
+                features["pothole_height_pixels"] = height
+                features["pothole_area_pixels"] = width * height
+                features["aspect_ratio"] = width / height
+                features["relative_size"] = (width * height) / (
+                    image_width * image_height
+                )
+                features["confidence"] = confidence
 
                 # Extract color information
                 roi = image_rgb[y1:y2, x1:x2]
                 avg_color = np.mean(roi, axis=(0, 1))
-                features['avg_color_r'], features['avg_color_g'], features['avg_color_b'] = avg_color
+                (
+                    features["avg_color_r"],
+                    features["avg_color_g"],
+                    features["avg_color_b"],
+                ) = avg_color
 
                 features_list.append(features)
 
@@ -280,13 +292,13 @@ class PotholeFeatureExtractor:
     def extract_batch(self, image_dir):
         all_features = []
         for image_file in os.listdir(image_dir):
-            if image_file.endswith(('.jpg', '.jpeg', '.png')):
+            if image_file.endswith((".jpg", ".jpeg", ".png")):
                 image_path = os.path.join(image_dir, image_file)
                 features = self.extract_features(image_path)
                 for feature in features:
-                    feature['image_file'] = image_file
+                    feature["image_file"] = image_file
                 all_features.extend(features)
-        
+
         return all_features
 
 
@@ -302,47 +314,48 @@ class PotholeFeatureExtractor:
 # print(df)
 
 if __name__ == "__main__":
-    model = YOLO(
-        "yolov8m.pt"
-    )  # load a pretrained model (recommended for training)
+    model = YOLO("yolov8m.pt")  # load a pretrained model (recommended for training)
 
-    # Get the directory of the current script
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    print(f"Script directory: {current_dir}")
-    
-    # Construct the full path to data.yaml
-    data_yaml_path = os.path.join(current_dir, "data.yaml")
-    
-    # Print the path to verify
-    print(f"Looking for data.yaml at: {data_yaml_path}")
+    model.train(data="data.yaml", epochs=1000, patience=50, imgsz=256, freeze=2)
+    model.val()
+    #
+    # # Get the directory of the current script
+    # current_dir = os.path.dirname(os.path.abspath(__file__))
+    # print(f"Script directory: {current_dir}")
+    #
+    # # Construct the full path to data.yaml
+    # data_yaml_path = os.path.join(current_dir, "data.yaml")
+    #
+    # # Print the path to verify
+    # print(f"Looking for data.yaml at: {data_yaml_path}")
+    #
+    # # Check if the file exists
+    # if not os.path.exists(data_yaml_path):
+    #     print(f"Error: data.yaml not found at {data_yaml_path}")
+    #     exit(1)
+    #
+    # # Usage example:
+    # yolo_model_path = os.path.join(current_dir, "yolov8n.pt")
+    # yolo_model = PotholeYOLO(yolo_model_path)
+    # extractor = PotholeFeatureExtractor(yolo_model.model)
+    #
+    # image_path = os.path.join(current_dir, "data", "images", "train", "p101.jpg")
+    # annotation_path = os.path.join(current_dir, "data", "labels", "train", "p101.txt")
+    #
+    # if not os.path.exists(image_path):
+    #     print(f"Error: Image not found at {image_path}")
+    #     exit(1)
+    #
+    # if not os.path.exists(annotation_path):
+    #     print(f"Error: Annotation not found at {annotation_path}")
+    #     exit(1)
 
-    # Check if the file exists
-    if not os.path.exists(data_yaml_path):
-        print(f"Error: data.yaml not found at {data_yaml_path}")
-        exit(1)
-
-    # Usage example:
-    yolo_model_path = os.path.join(current_dir, 'yolov8n.pt')
-    yolo_model = PotholeYOLO(yolo_model_path)
-    extractor = PotholeFeatureExtractor(yolo_model.model)
-    
-    image_path = os.path.join(current_dir, 'data', 'images', 'train', 'p101.jpg')
-    annotation_path = os.path.join(current_dir, 'data', 'labels', 'train', 'p101.txt')
-    
-    if not os.path.exists(image_path):
-        print(f"Error: Image not found at {image_path}")
-        exit(1)
-    
-    if not os.path.exists(annotation_path):
-        print(f"Error: Annotation not found at {annotation_path}")
-        exit(1)
-    
-    features = extractor.extract_features(image_path, annotation_path)
-    if not features:
-        print("No features extracted. The model might not have detected any potholes.")
-    else:
-        print(f"Number of features extracted: {len(features)}")
-        print(features)
-
-    # Optionally, you can add this to visualize the detections:
-    yolo_model.predict_and_show(image_path)
+    # features = extractor.extract_features(image_path, annotation_path)
+    # if not features:
+    #     print("No features extracted. The model might not have detected any potholes.")
+    # else:
+    #     print(f"Number of features extracted: {len(features)}")
+    #     print(features)
+    #
+    # # Optionally, you can add this to visualize the detections:
+    # yolo_model.predict_and_show(image_path)
