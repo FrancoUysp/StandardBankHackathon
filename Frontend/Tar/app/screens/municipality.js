@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import axios from "axios"; // You'll need to install this package
+import { db } from "../../FirebaseConfig";
+import { collection, getDocs } from "firebase/firestore";
 
 const MunicipalityScreen = () => {
   const [potholes, setPotholes] = useState([]);
@@ -19,10 +21,13 @@ const MunicipalityScreen = () => {
   const fetchPotholes = async () => {
     try {
       // Replace with your actual Firebase API endpoint
-      const response = await axios.get(
-        "https://your-firebase-api-endpoint.com/potholes"
-      );
-      setPotholes(response.data);
+      // const response = await axios.get(
+      //   "https://your-firebase-api-endpoint.com/potholes"
+      // );
+      const potholeCollection = collection(db, 'potholes');
+      const potholeSnapshot = await getDocs(potholeCollection);
+      const potholeList = potholeSnapshot.docs.map((doc) => ({...doc.data() , id : doc.id}));
+      setPotholes(potholeList);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching potholes:", error);
@@ -31,11 +36,13 @@ const MunicipalityScreen = () => {
   };
 
   const renderPotholeItem = ({ item }) => (
+
+    console.log(item.reported_date),
     <View style={styles.potholeItem}>
       <Text style={styles.potholeTitle}>Pothole ID: {item.id}</Text>
       <Text>Location: {item.location}</Text>
       <Text>
-        Reported on: {new Date(item.reportedDate).toLocaleDateString()}
+        Reported on: {(item.reported_date.toDate()).toLocaleDateString()}
       </Text>
       <Text>Status: {item.status}</Text>
     </View>

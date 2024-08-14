@@ -10,6 +10,7 @@ import {
 import { Camera } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
+import { db } from "../../FirebaseConfig";
 
 export default function App() {
   const [cameraPermission, setCameraPermission] = useState(null);
