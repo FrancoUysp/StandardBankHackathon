@@ -10,7 +10,9 @@ import {
 import { Camera } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import { db } from "../../FirebaseConfig";
+import { db, storage } from "../../FirebaseConfig";
+import { addDoc, collection } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes} from "firebase/storage";
 
 export default function App() {
   const [cameraPermission, setCameraPermission] = useState(null);
@@ -57,6 +59,27 @@ export default function App() {
     }
   };
 
+  const uploadImage = async () => {
+    const response = await fetch(image);
+    const blob = await response.blob();
+    const storageRef = ref(storage, `potholes/${Date.now()}`);
+    await uploadBytes(storageRef, blob);
+    return getDownloadURL(storageRef);
+  }
+
+  const submitReport = async () => {
+    const imageUrl = await uploadImage();
+    const potholeCollection = collection(db, 'potholes');
+    await addDoc(potholeCollection, {
+      image: imageUrl,
+      description: description,
+      location: "17 SOmehwere street, SOmehwere, 7800", // REplace this when location works
+      reported_date: new Date(),
+      status: "Reported",
+    });
+
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Report a Pothole</Text>
@@ -77,7 +100,7 @@ export default function App() {
       />
       <TouchableOpacity
         style={styles.submitButton}
-        onPress={() => console.log({ image, description, location })}
+        onPress={() => submitReport()}
       >
         <Text style={styles.submitButtonText}>Submit</Text>
       </TouchableOpacity>
