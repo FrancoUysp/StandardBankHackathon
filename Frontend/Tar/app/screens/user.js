@@ -12,7 +12,8 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { db, storage } from "../../FirebaseConfig";
 import { addDoc, collection } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage"
+import { getFunctions } from "firebase/functions";
 
 export default function App() {
   const [cameraPermission, setCameraPermission] = useState(null);
@@ -52,6 +53,13 @@ export default function App() {
       aspect: [4, 3],
       quality: 1,
     });
+
+    // Make a request to the on_request_example function in the Firebase Functions
+    // This is where we are going to call the cloud function to compute the number of bags
+    // Code below is just a silly exmaple to test the cloud function
+    // Don't remove please -- Gunther
+    // const functions = getFunctions();
+    // const onRequestExample = functions.httpsCallable("on_request_example");
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
