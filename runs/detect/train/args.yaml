@@ -2,13 +2,13 @@ task: detect
 mode: train
 model: yolov8m.pt
 data: data.yaml
-epochs: 1000
+epochs: 200
 time: null
-patience: 50
+patience: 25
 batch: 16
 imgsz: 256
 save: true
-save_period: -1
+save_period: 10
 cache: false
 device: null
 workers: 8
