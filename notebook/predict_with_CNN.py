@@ -22,9 +22,10 @@ def add_randomness_to_colors_tf(image):
     img_tensor = tf.image.convert_image_dtype(img_tensor, tf.float32)
 
     return img_tensor
+
 class Augment(tf.keras.layers.Layer):
     def __init__(self, contrast_range=[0.4, 1.5], 
-                 brightness_delta=[-0.3, 0.3],
+                 brightness_delta=[-0.4, 0.3],
                  hue_delta=[-0.1, 0.1],
                  jpeg_qual = [40,100],
                  **kwargs):
@@ -49,41 +50,7 @@ class Augment(tf.keras.layers.Layer):
             return images
         
         images = self.ensure_rank_4(images)
-        
-        contrast = np.random.uniform(
-            self.contrast_range[0], self.contrast_range[1])
-        brightness = np.random.uniform(
-            self.brightness_delta[0], self.brightness_delta[1])
-        hue = np.random.uniform(
-            self.hue_delta[0], self.hue_delta[1])
-        jpeg = random.randint(
-            self.jpeg_qual[0], self.jpeg_qual[1])
-        flip_u = random.randint(0,2)
-        flip_l = random.randint(0,2)
-        
-        contr = random.randint(0,1)
-        bright = random.randint(0,1)
 
-        ad_hue = random.randint(0,1)
-        j_q = random.randint(0,2)
-
-        rand_col = random.randint(0,1)
-        soft = random.randint(0,2)
-
-        rot = random.randint(0, 2)
-
-        if (contr == 1) :images = tf.image.adjust_contrast(images, contrast)
-        if (bright == 1) :images = tf.image.adjust_brightness(images, brightness)
-        images = tf.clip_by_value(images, 0, 1)
-        if (ad_hue == 1) :images = tf.image.adjust_hue(images, hue)
-        #if (j_q== 1) :images = tf.image.adjust_jpeg_quality(images, jpeg, dct_method='')
-        if (rand_col == 1) :images = add_randomness_to_colors_tf(images)
-        #if (soft == 1) :images = soften_edges_tf(images)
-        if (flip_l == 1) : images = tf.image.flip_left_right(images)
-        if (flip_u == 1) : images = tf.image.flip_up_down(images)
-        if (rot == 1) : images =tf.image.rot90(images)
-
-        return images
 def get_annotations(filename):
     data = []
     with open(filename, 'r') as file:
@@ -140,13 +107,13 @@ def resize_and_pad_image(image_path, scale_factor, target_size=(512, 512), max_i
         new_size = (int(width * scale_factor), int(height * scale_factor))
         
         # Resize and save image
-        img = img.resize(new_size, Image.LANCZOS)
+        img_resized = img.resize(new_size, Image.LANCZOS)
         # Calculate scaling factor based on the largest image
-        scale_factor = target_size[0] / max_image_size
+        scale_factor_res = target_size[0] / max_image_size
         
         # Resize the image while keeping aspect ratio
-        new_size = (int(img.width * scale_factor), int(img.height * scale_factor))
-        img_resized = img.resize(new_size, Image.LANCZOS)
+        new_size = (int(img_resized.width * scale_factor_res), int(img_resized.height * scale_factor_res))
+        img_cropped = img_resized.resize(new_size, Image.LANCZOS)
         
         # Create a new image with a black background
         new_img = Image.new("RGB", target_size, (0, 0, 0))
@@ -156,7 +123,7 @@ def resize_and_pad_image(image_path, scale_factor, target_size=(512, 512), max_i
         padding_y = (target_size[1] - new_size[1]) // 2
         
         # Paste the resized image onto the black background
-        new_img.paste(img_resized, (padding_x, padding_y))
+        new_img.paste(img_cropped, (padding_x, padding_y))
         
         # Save the new image
         return new_img
@@ -166,6 +133,47 @@ def preprocess_image(image_path):
     img_array = img_to_array(img)
     img_array = img_array / 255.0  # Normalize to [0, 1]
     return img_array
+
+
+def predict_CNN(image_path,text_path):
+
+    to_predict = get_annotations(text_path)
+    to_predict = pd.DataFrame(to_predict)
+    # Add a column with stick sizes
+    to_predict['stick_size'] = to_predict.apply(
+        lambda row: calculate_stick_size(row, *get_image_size(image_path)),
+        axis=1)
+
+    to_predict['stick_size'] = to_predict['stick_size'].transform(
+        lambda x: x.replace(0, x.max())
+    )
+    # If stick_size is still zero, populate it with the mean of non-zero stick_size values
+    to_predict['stick_size'] = to_predict['stick_size'].replace(0, 300)
+
+    scale_factor  = (400 / to_predict['stick_size'][0])
+    
+    # Resize Image and Pad black arounf the edges
+    input_img = resize_and_pad_image(image_path,scale_factor,(512,512),2886)
+
+    #Getting input ready for the model to predict
+    img_width, img_height = 256, 256
+    input_img_2 = input_img.resize((img_width, img_height))
+    img_array = img_to_array(input_img_2)
+    img_array = img_array / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
+
+    #Load the previously trained model
+    loaded_model = tf.keras.models.load_model('../model_weights/CNN_padded_images.keras', custom_objects={'Augment': Augment})
+
+    #Isolate the second to last layer and make it it's own layer
+    second_to_last_layer = loaded_model.layers[-2].output
+    new_model = tf.keras.Model(inputs=loaded_model.inputs, outputs=second_to_last_layer)
+
+    #Predict with this to get the last layers output
+    second_to_last_layer_output = new_model.predict(img_array)
+    
+    return second_to_last_layer_output
+
 
 def main():
     # Set up argument parser
@@ -177,33 +185,7 @@ def main():
 
     INPUT_IMAGE = args.input_image
     INPUT_TEXT = args.input_text
-    
-    # Call the function with the provided arguments
-    
-    to_predict = get_annotations(INPUT_TEXT)
-    to_predict = pd.DataFrame(to_predict)
-    # Add a column with stick sizes
-    to_predict['stick_size'] = to_predict.apply(
-        lambda row: calculate_stick_size(row, *get_image_size(INPUT_IMAGE)),
-        axis=1)
-
-    to_predict['stick_size'] = to_predict['stick_size'].transform(
-        lambda x: x.replace(0, x.max())
-    )
-    # If stick_size is still zero, populate it with the mean of non-zero stick_size values
-    to_predict['stick_size'] = to_predict['stick_size'].replace(0, 300)
-
-    scale_factor  = (400 / to_predict['stick_size'][0])
-    
-    input_img = resize_and_pad_image(INPUT_IMAGE,scale_factor,(512,512),2886)
-    img_width, img_height = 256, 256
-    input_img = input_img.resize((img_width, img_height))
-    img_array = img_to_array(input_img)
-    img_array = img_array / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
-    loaded_model = tf.keras.models.load_model('../model_weights/CNN_padded_images.keras', custom_objects={'Augment': Augment})
-    prediction = loaded_model.predict(img_array)
-    print(prediction)
+    predict_CNN(INPUT_IMAGE,INPUT_TEXT)
 
 if __name__ == "__main__":
     main()
