@@ -11,5 +11,5 @@ if __name__ == "__main__":
     #yaml_path = prepare_dataset(data_dir, base_output_dir)
     model = YOLO("yolov8m.pt")  # load a pretrained model (recommended for training)
 
-    model.train(data="data.yaml", epochs=1000, patience=50, imgsz=256, freeze=15)
+    model.train(data="data.yaml", epochs=200, patience=25, imgsz=256, freeze=15, save_period=10)
     model.val()
