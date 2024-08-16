@@ -54,13 +54,6 @@ export default function App() {
       quality: 1,
     });
 
-    // Make a request to the on_request_example function in the Firebase Functions
-    // This is where we are going to call the cloud function to compute the number of bags
-    // Code below is just a silly exmaple to test the cloud function
-    // Don't remove please -- Gunther
-    // const functions = getFunctions();
-    // const onRequestExample = functions.httpsCallable("on_request_example");
-
     if (!result.canceled) {
       setImage(result.assets[0].uri);
       const currentLocation = await Location.getCurrentPositionAsync({});
@@ -79,7 +72,7 @@ export default function App() {
   const submitReport = async () => {
     const imageUrl = await uploadImage();
     const potholeCollection = collection(db, "potholes");
-    await addDoc(potholeCollection, {
+    docref = await addDoc(potholeCollection, {
       image: imageUrl,
       description: description,
       location: "Dagbreek Manskoshuis, Stellenbosch, 7600", // Replace this when location works
