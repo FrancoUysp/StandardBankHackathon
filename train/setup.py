@@ -6,22 +6,6 @@ import yaml
 import sys
 
 
-def setup_directories(base_dir, split_dirs, include_test=False):
-    """Create base directories for images, labels, and subdirectories for train, val, and test (if needed)."""
-    dirs = []
-    for split_dir in split_dirs:
-        dirs.append(f"images/{split_dir}")
-        dirs.append(f"labels/{split_dir}")
-        if include_test:
-            dirs.append(f"annotations/{split_dir}")
-
-    for directory in dirs:
-        dir_path = os.path.join(base_dir, directory)
-        if os.path.exists(dir_path):
-            shutil.rmtree(dir_path)
-        os.makedirs(dir_path, exist_ok=True)
-
-
 def save_annotations_and_images(
     images_dir,
     annotations_dir,
@@ -65,6 +49,72 @@ def save_annotations_and_images(
             )
 
 
+def create_yaml_file(yaml_path, base_output_dir):
+    """Create a YAML configuration file for YOLO."""
+    data = {
+        "path": os.path.abspath(base_output_dir),
+        "train": "images/train",
+        "val": "images/val",
+        "names": {0: "pothole", 1: "l1_stick"},
+    }
+    with open(yaml_path, "w") as file:
+        yaml.dump(data, file, default_flow_style=False)
+
+
+def setup_directories(base_dir, pp_mode=False):
+    """Create base directories for images, annotations, and labels."""
+    dirs = (
+        ["images", "annotations", "labels"]
+        if pp_mode
+        else [
+            "images/train",
+            "images/val",
+            "images/test",
+            "labels/train",
+            "labels/val",
+            "labels/test",
+            "annotations/train",
+            "annotations/val",
+            "annotations/test",
+        ]
+    )
+
+    for directory in dirs:
+        dir_path = os.path.join(base_dir, directory)
+        if os.path.exists(dir_path):
+            shutil.rmtree(dir_path)
+        os.makedirs(dir_path, exist_ok=True)
+
+
+def save_annotations_and_images_pp(
+    images_dir, annotations_dir, labels_df, base_output_dir
+):
+    """Copy images, annotations, and labels to the appropriate directories in pp mode."""
+    image_dest_dir = os.path.join(base_output_dir, "images")
+    annotation_dest_dir = os.path.join(base_output_dir, "annotations")
+    label_dest_dir = os.path.join(base_output_dir, "labels")
+
+    # Copy all images
+    for image_file in os.listdir(images_dir):
+        if image_file.endswith(".jpg"):
+            shutil.copy(
+                os.path.join(images_dir, image_file),
+                os.path.join(image_dest_dir, image_file),
+            )
+
+    # Copy all annotations
+    for annotation_file in os.listdir(annotations_dir):
+        if annotation_file.endswith(".txt"):
+            shutil.copy(
+                os.path.join(annotations_dir, annotation_file),
+                os.path.join(annotation_dest_dir, annotation_file),
+            )
+
+    # Copy the CSV file to the labels directory
+    labels_csv_dest = os.path.join(label_dest_dir, "labels.csv")
+    shutil.copy(labels_df, labels_csv_dest)
+
+
 def split_data(
     images_dir,
     annotations_dir,
@@ -78,6 +128,10 @@ def split_data(
     """Split data into train, validation, and test sets based on mode."""
     if seed is not None:
         random.seed(seed)
+
+    if mode == "pp":
+        # No need to split, return empty lists as we don't perform any splitting in PP mode
+        return [], [], []
 
     image_files = set(
         [f.split(".")[0][1:] for f in os.listdir(images_dir) if f.endswith(".jpg")]
@@ -114,54 +168,55 @@ def prepare_dataset(
     images_dir,
     annotations_dir,
     base_output_dir,
-    split_dirs,
-    train_ratio=0.7,
-    val_ratio=0.15,
-    test_ratio=0.15,
-    include_annotations=False,
     labels_df=None,
     mode="od",
     seed=None,
 ):
-    """Main function to prepare dataset, split data, and create directories."""
-    # Setup directories
-    setup_directories(base_output_dir, split_dirs, include_test=include_annotations)
+    """Main function to prepare dataset and create directories."""
+    pp_mode = mode == "pp"
 
-    # Split data into train, validation, and test sets
-    train_files, val_files, test_files = split_data(
-        images_dir,
-        annotations_dir,
-        labels_df,
-        train_ratio,
-        val_ratio,
-        test_ratio,
-        mode,
-        seed,
-    )
+    # Setup directories based on mode
+    setup_directories(base_output_dir, pp_mode=pp_mode)
 
-    # Save annotations and images for train, validation, and test
-    save_annotations_and_images(
-        images_dir,
-        annotations_dir,
-        train_files,
-        os.path.join(base_output_dir, "images/train"),
-        os.path.join(base_output_dir, "labels/train"),
-        os.path.join(base_output_dir, "annotations/train")
-        if include_annotations
-        else None,
-    )
-    save_annotations_and_images(
-        images_dir,
-        annotations_dir,
-        val_files,
-        os.path.join(base_output_dir, "images/val"),
-        os.path.join(base_output_dir, "labels/val"),
-        os.path.join(base_output_dir, "annotations/val")
-        if include_annotations
-        else None,
-    )
+    if pp_mode:
+        # For PP mode, copy everything to the respective directories without splitting
+        save_annotations_and_images_pp(
+            images_dir,
+            annotations_dir,
+            labels_df,  # Pass the path to the CSV file instead of the DataFrame
+            base_output_dir,
+        )
+    else:
+        # Split data into train, validation, and test sets
+        train_files, val_files, test_files = split_data(
+            images_dir,
+            annotations_dir,
+            labels_df,
+            train_ratio=0.7,
+            val_ratio=0.15,
+            test_ratio=0.15,
+            mode=mode,
+            seed=seed,
+        )
 
-    if include_annotations:
+        # Save annotations and images for train, validation, and test
+        save_annotations_and_images(
+            images_dir,
+            annotations_dir,
+            train_files,
+            os.path.join(base_output_dir, "images/train"),
+            os.path.join(base_output_dir, "labels/train"),
+            os.path.join(base_output_dir, "annotations/train"),
+        )
+        save_annotations_and_images(
+            images_dir,
+            annotations_dir,
+            val_files,
+            os.path.join(base_output_dir, "images/val"),
+            os.path.join(base_output_dir, "labels/val"),
+            os.path.join(base_output_dir, "annotations/val"),
+        )
+
         save_annotations_and_images(
             images_dir,
             annotations_dir,
@@ -171,26 +226,14 @@ def prepare_dataset(
             os.path.join(base_output_dir, "annotations/test"),
         )
 
-    # Create YAML file for YOLO only in `od` mode
-    if mode == "od":
-        yaml_path = os.path.join(os.path.dirname(base_output_dir), "data.yaml")
-        create_yaml_file(yaml_path, base_output_dir)
-        print(f"YAML file created at {yaml_path}")
+        # Create YAML file for YOLO only in `od` mode
+        if mode == "od":
+            yaml_path = os.path.join(os.path.dirname(base_output_dir), "data.yaml")
+            create_yaml_file(yaml_path, base_output_dir)
+            print(f"YAML file created at {yaml_path}")
 
-    print(f"Data preparation complete. Split files created in {base_output_dir}.")
+    print(f"Data preparation complete. Files created in {base_output_dir}.")
     return
-
-
-def create_yaml_file(yaml_path, base_output_dir):
-    """Create a YAML configuration file for YOLO."""
-    data = {
-        "path": os.path.abspath(base_output_dir),
-        "train": "images/train",
-        "val": "images/val",
-        "names": {0: "pothole", 1: "l1_stick"},
-    }
-    with open(yaml_path, "w") as file:
-        yaml.dump(data, file, default_flow_style=False)
 
 
 if __name__ == "__main__":
@@ -211,11 +254,6 @@ if __name__ == "__main__":
             images_dir,
             annotations_dir,
             base_output_dir,
-            ["train", "val"],
-            train_ratio=0.85,
-            val_ratio=0.15,
-            test_ratio=0.0,  # No test set for `od` mode
-            include_annotations=False,  # No separate annotations directory in `od` mode
             mode="od",
             seed=seed,
         )
@@ -230,25 +268,17 @@ if __name__ == "__main__":
             data_dir, "train_labels.csv"
         )  # Corrected the path to look for labels.csv directly
 
-        # Load the labels
-        labels_df = pd.read_csv(labels_dir)
-
-        # Prepare dataset with train, val, and test splits in `pp` mode
+        # Prepare dataset without train/val/test splits in `pp` mode
         prepare_dataset(
             images_dir=images_dir,
             annotations_dir=annotations_dir,
             base_output_dir=base_output_dir,  # Write splits to the 'data' directory
-            split_dirs=["train", "val", "test"],
-            train_ratio=0.7,
-            val_ratio=0.15,
-            test_ratio=0.15,
-            include_annotations=True,  # Include annotations directory in `pp` mode
-            labels_df=labels_df,
+            labels_df=labels_dir,  # Pass the path of labels CSV file
             mode="pp",
             seed=seed,
         )
 
     else:
         print(
-            "Invalid argument. Use 'od' for original dataset split or 'pp' for train/val/test split."
+            "Invalid argument. Use 'od' for original dataset split or 'pp' for full dataset preparation without split."
         )

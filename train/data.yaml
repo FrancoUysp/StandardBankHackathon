@@ -1,7 +1,6 @@
-path: /home/ec2-user/StandardBankHackathon/train/data
-train: images/train
-val: images/val
-  
 names:
   0: pothole
   1: l1_stick
+path: /Users/francouys/Documents/hackathon_STD/train/data
+train: images/train
+val: images/val
