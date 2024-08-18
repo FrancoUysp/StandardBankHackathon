@@ -153,9 +153,28 @@ def main():
 
     train_tuples, val_tuples, test_tuples = split_data_tuples(data_tuples)
 
-    X_train, y_train = extract_features(train_tuples)
-    X_val, y_val = extract_features(val_tuples)
-    X_test, y_test = extract_features(test_tuples)
+    # First check if the feautures are already extracted
+    if os.path.exists("data/features/X_train.csv"):
+        X_train = pd.read_csv("data/features/X_train.csv")
+        y_train = pd.read_csv("data/features/y_train.csv")
+        X_val = pd.read_csv("data/features/X_val.csv")
+        y_val = pd.read_csv("data/features/y_val.csv")
+        X_test = pd.read_csv("data/features/X_test.csv")
+        y_test = pd.read_csv("data/features/y_test.csv")
+        print("Features already extracted. Skipping feature extraction step.")
+
+    else:
+        X_train, y_train = extract_features(train_tuples)
+        X_val, y_val = extract_features(val_tuples)
+        X_test, y_test = extract_features(test_tuples)
+
+        # Save the tuples
+        X_train.to_csv("data/features/X_train.csv", index=False)
+        pd.DataFrame(y_train).to_csv("data/features/y_train.csv", index=False)
+        X_val.to_csv("data/features/X_val.csv", index=False)
+        pd.DataFrame(y_val).to_csv("data/features/y_val.csv", index=False)
+        X_test.to_csv("data/features/X_test.csv", index=False)
+        pd.DataFrame(y_test).to_csv("data/features/y_test.csv", index=False)
 
     pca = PCA(n_components=2)
     X_train_pca = pca.fit_transform(X_train)
