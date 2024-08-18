@@ -163,7 +163,7 @@ def predict_CNN(image_path,text_path):
     img_array = np.expand_dims(img_array, axis=0)
 
     #Load the previously trained model
-    loaded_model = tf.keras.models.load_model('../model_weights/CNN_padded_images.keras', custom_objects={'Augment': Augment})
+    loaded_model = tf.keras.models.load_model('../model_weights/Bigger_R2_42_Pool_3_3.keras', custom_objects={'Augment': Augment})
 
     #Isolate the second to last layer and make it it's own layer
     second_to_last_layer = loaded_model.layers[-2].output
