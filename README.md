@@ -71,6 +71,11 @@ python predict_test.py
 
 This will create a `predictions` directory with results in YOLO format.
 
+### Step 6: Obtaining Target Predictions for Test Data
+
+**NOTE**: You must first run the `setup.py` file in `'pp'` mode within the `train/` directory before running the `notebook/main.py` file that contains the solutions.
+
+
 ## Additional Information
 
 - **Combination.ipynb**: This notebook was used for experimenting with various machine learning models and the data. It is located in the root directory.
