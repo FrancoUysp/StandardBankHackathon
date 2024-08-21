@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Linking,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import axios from "axios"; // You'll need to install this package
 import { db } from "../../FirebaseConfig";
@@ -47,12 +48,16 @@ const MunicipalityScreen = () => {
 
     return (
       <View style={styles.potholeItem}>
+        <View style={{ alignItems: 'center' }}>
+        <Image source={{ uri: item.image }} style={styles.potholeImage} />
+        </View>
         <Text style={styles.potholeTitle}>Pothole ID: {item.id}</Text>
         <Text>Location: {item.location}</Text>
         <Text>
           Reported on: {item.reported_date.toDate().toLocaleDateString()}
         </Text>
         <Text>Status: {item.status}</Text>
+        <Text>Bags: {item.bags}</Text>
         <TouchableOpacity onPress={() => Linking.openURL(googleMapsUrl)}>
           <Text style={styles.linkText}>View in Google Maps</Text>
         </TouchableOpacity>
@@ -111,6 +116,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 8,
+  },
+  potholeImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50, // This makes the image circular
+    marginBottom: 10,
   },
   emptyList: {
     textAlign: "center",
