@@ -52,6 +52,7 @@ const MunicipalityScreen = () => {
         <Image source={{ uri: item.image }} style={styles.potholeImage} />
         </View>
         <Text style={styles.potholeTitle}>Pothole ID: {item.id}</Text>
+        <Text>Description: {item.description}</Text>
         <Text>Location: {item.location}</Text>
         <Text>
           Reported on: {item.reported_date.toDate().toLocaleDateString()}
