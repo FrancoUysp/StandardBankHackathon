@@ -328,3 +328,16 @@ $RECYCLE.BIN/
 MiDaS/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,linux,windows,git,venv,jupyternotebooks,vim,visualstudiocode
+
+### Removed from this snapshot (see README) ###
+data/
+runs/
+model_weights/
+Data_CNN/
+*.pt
+*.h5
+*.keras
+*.pkl
+node_modules/
+.expo/
+Frontend/Tar/.env
